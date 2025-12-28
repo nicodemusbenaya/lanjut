@@ -73,6 +73,20 @@ const addToQueue = (user) => {
   return queue
 }
 
+// Mock teammates untuk instant match di mock mode
+const generateMockTeammates = () => {
+  const mockNames = ['Alex Dev', 'Budi Coder', 'Cindy Tech', 'Deni Stack']
+  const mockRoles = ['Backend Engineer', 'Frontend Engineer', 'UI/UX Designer', 'DevOps Engineer']
+  
+  return mockNames.slice(0, 2 + Math.floor(Math.random() * 2)).map((name, idx) => ({
+    user_id: 'mock_user_' + Math.random().toString(36).substring(2, 8),
+    name: name,
+    username: name.toLowerCase().replace(' ', '_'),
+    role: mockRoles[idx % mockRoles.length],
+    pict: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name.replace(' ', '')}`
+  }))
+}
+
 const removeFromQueue = (userId) => {
   const queue = loadMockQueue()
   const filtered = queue.filter(u => u.id !== userId)
@@ -258,41 +272,32 @@ const mockHandlers = {
       throw { response: { status: 401, data: { detail: 'Unauthorized' } } }
     }
 
-    const queue = addToQueue(mockCurrentUser)
-    const MIN_USERS_FOR_MATCH = 2
-
-    if (queue.length >= MIN_USERS_FOR_MATCH) {
-      const matchedUsers = queue.slice(0, Math.min(4, queue.length))
-
-      mockRoom = {
-        id: 'room_' + Math.random().toString(36).substring(2, 8),
-        leader_id: matchedUsers[0].id,
-        members: matchedUsers.map(u => ({
-          user_id: u.id,
-          name: u.name,
-          username: u.username,
-          role: u.role,
-          pict: u.pict
-        })),
-        status: 'active'
-      }
-
-      mockMessages = []
-      saveMockRoom(mockRoom)
-      matchedUsers.forEach(u => removeFromQueue(u.id))
-
-      return {
-        room_id: mockRoom.id,
-        leader_id: mockRoom.leader_id,
-        members: mockRoom.members
-      }
+    // Di mock mode, langsung buat room dengan mock teammates (instant match)
+    const mockTeammates = generateMockTeammates()
+    const currentUserMember = {
+      user_id: mockCurrentUser.id,
+      name: mockCurrentUser.name,
+      username: mockCurrentUser.username,
+      role: mockCurrentUser.role,
+      pict: mockCurrentUser.pict
     }
 
+    mockRoom = {
+      id: 'room_' + Math.random().toString(36).substring(2, 8),
+      leader_id: mockCurrentUser.id, // User jadi leader
+      members: [currentUserMember, ...mockTeammates],
+      status: 'active'
+    }
+
+    mockMessages = []
+    saveMockRoom(mockRoom)
+    removeFromQueue(mockCurrentUser.id)
+
     return {
-      status: 'waiting',
-      queue_position: queue.findIndex(u => u.id === mockCurrentUser.id) + 1,
-      queue_size: queue.length,
-      message: `Menunggu user lain bergabung... (${queue.length}/${MIN_USERS_FOR_MATCH} user dalam antrian)`
+      room_id: mockRoom.id,
+      id: mockRoom.id,
+      leader_id: mockRoom.leader_id,
+      members: mockRoom.members
     }
   },
 
