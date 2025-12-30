@@ -135,7 +135,7 @@ const navigateTo = (path) => {
 
     <!-- Benefits Section -->
     <section class="max-w-7xl mx-auto px-6 py-16">
-      <div class="bg-gradient-to-br from-cyan-500 to-teal-500 rounded-3xl p-8 md:p-12 text-white shadow-xl">
+      <div class="rounded-3xl p-8 md:p-12 text-white shadow-xl" style="background: linear-gradient(to bottom right, #138BA7, #0F172A);">
         <div class="grid md:grid-cols-2 gap-8 items-center">
           <div>
             <h3 class="text-3xl md:text-4xl font-bold mb-4">
