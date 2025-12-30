@@ -101,7 +101,7 @@ const navigateTo = (path) => {
           @click="navigateTo('/register')"
           class="h-14 px-8 bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-700 hover:to-teal-600 shadow-lg hover:shadow-xl transition-all text-lg"
         >
-          Mulai Sekarang <ArrowRight class="ml-2 h-5 w-5" />
+          Mulai Sekarang
         </Button>
         <Button
           size="lg"
@@ -135,7 +135,7 @@ const navigateTo = (path) => {
 
     <!-- Benefits Section -->
     <section class="max-w-7xl mx-auto px-6 py-16">
-      <div class="rounded-3xl p-8 md:p-12 text-white shadow-xl" style="background: linear-gradient(to bottom right, #138BA7, #0F172A);">
+      <div class="rounded-3xl p-8 md:p-12 text-white shadow-xl" style="background: linear-gradient(to bottom right, #0F172A, #138BA7);">
         <div class="grid md:grid-cols-2 gap-8 items-center">
           <div>
             <h3 class="text-3xl md:text-4xl font-bold mb-4">
