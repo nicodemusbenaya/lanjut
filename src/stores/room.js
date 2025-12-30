@@ -144,6 +144,7 @@ export const useRoomStore = defineStore('room', () => {
         name: m.name || m.username || m.user_name,
         username: m.username || m.user_name || m.name,
         role: m.role,
+        skills: m.skills || [],
         avatar:
           m.pict || m.avatar || m.picture ||
           `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.username || m.user_id || m.id}`,

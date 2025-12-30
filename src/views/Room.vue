@@ -11,7 +11,7 @@ import Avatar from '@/components/ui/Avatar.vue'
 import AvatarImage from '@/components/ui/AvatarImage.vue'
 import AvatarFallback from '@/components/ui/AvatarFallback.vue'
 import ScrollArea from '@/components/ui/ScrollArea.vue'
-import { Crown, Send, LogOut, Users, Copy, Loader2, Home } from 'lucide-vue-next'
+import { Crown, Send, LogOut, Users, Copy, Loader2, Home, X, User, Mail, Briefcase, Code } from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -21,6 +21,33 @@ const { toast } = useToast()
 const messageInput = ref('')
 const messagesEndRef = ref(null)
 const isInitialLoad = ref(true)
+
+// Profile Modal State
+const showProfileModal = ref(false)
+const selectedMember = ref(null)
+
+const openProfileModal = (member) => {
+  if (member.id === authStore.user?.id) return // Don't show modal for self
+  selectedMember.value = member
+  showProfileModal.value = true
+}
+
+const closeProfileModal = () => {
+  showProfileModal.value = false
+  selectedMember.value = null
+}
+
+const getMemberById = (userId) => {
+  return roomStore.activeRoom?.members?.find(m => m.id === userId) || null
+}
+
+const openProfileFromChat = (userId) => {
+  if (userId === authStore.user?.id) return
+  const member = getMemberById(userId)
+  if (member) {
+    openProfileModal(member)
+  }
+}
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -200,8 +227,9 @@ const handleCopyRoomId = () => {
               'flex gap-3 p-3 rounded-xl transition-all',
               m.id === authStore.user?.id
                 ? 'bg-gradient-to-r from-cyan-50 to-teal-50 border border-cyan-100'
-                : 'hover:bg-slate-50'
+                : 'hover:bg-slate-50 cursor-pointer hover:shadow-sm'
             ]"
+            @click="openProfileModal(m)"
           >
             <Avatar class="h-10 w-10 ring-2 ring-white shadow-sm">
               <AvatarImage :src="m.avatar || ''" />
@@ -249,7 +277,13 @@ const handleCopyRoomId = () => {
               :key="msg.id"
               :class="['flex gap-3', msg.userId === authStore.user?.id ? 'flex-row-reverse' : '']"
             >
-              <Avatar class="h-8 w-8 ring-2 ring-white shadow-sm flex-shrink-0">
+              <Avatar 
+                :class="[
+                  'h-8 w-8 ring-2 ring-white shadow-sm flex-shrink-0',
+                  msg.userId !== authStore.user?.id ? 'cursor-pointer hover:ring-cyan-300 transition-all' : ''
+                ]"
+                @click="openProfileFromChat(msg.userId)"
+              >
                 <AvatarFallback :class="[
                   'text-xs',
                   msg.userId === authStore.user?.id
@@ -293,5 +327,151 @@ const handleCopyRoomId = () => {
         </form>
       </div>
     </div>
+
+    <!-- Profile Modal -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div 
+          v-if="showProfileModal && selectedMember" 
+          class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        >
+          <!-- Backdrop -->
+          <div 
+            class="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+            @click="closeProfileModal"
+          ></div>
+          
+          <!-- Modal Content -->
+          <div class="relative bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
+            <!-- Header with gradient -->
+            <div class="bg-gradient-to-br from-cyan-500 to-teal-500 px-6 py-8 text-center relative">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                class="absolute top-3 right-3 text-white/80 hover:text-white hover:bg-white/20"
+                @click="closeProfileModal"
+              >
+                <X class="h-5 w-5" />
+              </Button>
+              
+              <Avatar class="h-24 w-24 mx-auto ring-4 ring-white shadow-lg">
+                <AvatarImage :src="selectedMember.avatar || ''" />
+                <AvatarFallback class="bg-white text-cyan-600 text-2xl font-bold">
+                  {{ selectedMember.name?.[0] || selectedMember.username?.[0] || 'U' }}
+                </AvatarFallback>
+              </Avatar>
+              
+              <h2 class="mt-4 text-xl font-bold text-white flex items-center justify-center gap-2">
+                {{ selectedMember.name || selectedMember.username || `User ${String(selectedMember.id).slice(-4)}` }}
+                <Crown v-if="selectedMember.id === roomStore.activeRoom?.leaderId" class="h-5 w-5 text-amber-300" />
+              </h2>
+              
+              <p v-if="selectedMember.username" class="text-white/80 text-sm mt-1">
+                @{{ selectedMember.username }}
+              </p>
+            </div>
+            
+            <!-- Profile Info -->
+            <div class="p-6 space-y-4">
+              <!-- Role -->
+              <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                <div class="w-10 h-10 bg-gradient-to-br from-cyan-100 to-teal-100 rounded-lg flex items-center justify-center">
+                  <Briefcase class="h-5 w-5 text-cyan-600" />
+                </div>
+                <div>
+                  <p class="text-xs text-slate-400 uppercase tracking-wider">Role</p>
+                  <p class="text-sm font-medium text-slate-700">{{ selectedMember.role || 'Member' }}</p>
+                </div>
+              </div>
+              
+              <!-- Skills -->
+              <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+                <div class="w-10 h-10 bg-gradient-to-br from-cyan-100 to-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Code class="h-5 w-5 text-cyan-600" />
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs text-slate-400 uppercase tracking-wider mb-2">Skills</p>
+                  <div v-if="selectedMember.skills && selectedMember.skills.length > 0" class="flex flex-wrap gap-2">
+                    <Badge 
+                      v-for="skill in selectedMember.skills" 
+                      :key="skill"
+                      class="bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-xs border-0"
+                    >
+                      {{ skill }}
+                    </Badge>
+                  </div>
+                  <p v-else class="text-sm text-slate-400 italic">Belum ada skills</p>
+                </div>
+              </div>
+              
+              <!-- Email (if available) -->
+              <div v-if="selectedMember.email" class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                <div class="w-10 h-10 bg-gradient-to-br from-cyan-100 to-teal-100 rounded-lg flex items-center justify-center">
+                  <Mail class="h-5 w-5 text-cyan-600" />
+                </div>
+                <div>
+                  <p class="text-xs text-slate-400 uppercase tracking-wider">Email</p>
+                  <p class="text-sm font-medium text-slate-700">{{ selectedMember.email }}</p>
+                </div>
+              </div>
+              
+              <!-- User ID -->
+              <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                <div class="w-10 h-10 bg-gradient-to-br from-cyan-100 to-teal-100 rounded-lg flex items-center justify-center">
+                  <User class="h-5 w-5 text-cyan-600" />
+                </div>
+                <div>
+                  <p class="text-xs text-slate-400 uppercase tracking-wider">User ID</p>
+                  <p class="text-sm font-medium text-slate-700 font-mono">{{ String(selectedMember.id).slice(-8) }}</p>
+                </div>
+              </div>
+              
+              <!-- Leader Badge -->
+              <div v-if="selectedMember.id === roomStore.activeRoom?.leaderId" class="flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                <Crown class="h-5 w-5 text-amber-500" />
+                <span class="text-sm font-medium text-amber-700">Team Leader</span>
+              </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="px-6 pb-6">
+              <Button 
+                class="w-full bg-gradient-to-r from-cyan-600 to-teal-500 hover:from-cyan-700 hover:to-teal-600"
+                @click="closeProfileModal"
+              >
+                Tutup
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+</style>
